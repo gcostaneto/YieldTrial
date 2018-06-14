@@ -1,0 +1,20 @@
+Package: YieldTrial
+Type: Package
+Title: Phenotypic analysis and diagnosis over multienvironment trials in plant breeding
+Version: 0.1.0
+Author: Germano Martins F. Costa Neto
+Maintainer: Germano Martins F. Costa Neto <germano.cnet@usp.br>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.0.1
+Suggests: lme4,
+    knitr,
+    reshape2,
+    agridat,
+    gplots,
+    ggplot2,
+    viridis,
+    psych
