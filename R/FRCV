@@ -12,7 +12,7 @@ rmse <- function(x,y){return(sqrt(((x-y)^2)/length(x)))}
 FR.CV <- function(Y,COV,GA){
   kfold <- nrow(GA)
   acc <- data.frame(acc=matrix(NA,nrow= kfold))
-  pred.error <- data.frame(rmse=matrix(NA,nrow= kfold))
+  #pred.error <- data.frame(rmse=matrix(NA,nrow= kfold))
   SumsqP <- data.frame(long=matrix(NA,nrow= kfold),
                        lat =matrix(NA,nrow= kfold),
                        alt =matrix(NA,nrow= kfold))
@@ -27,7 +27,7 @@ FR.CV <- function(Y,COV,GA){
     
     # reliability and prediciton error
     acc$acc[j] <- cor(GA[j,],GAV.p)
-    pred.error$rmse[j] <- rmse((x=GA[j,],y=GAV.p))
+    #pred.error$rmse[j] <- rmse(x=GA[j,],y=GAV.p)
     
     # participation
     SumsqP$long[j]<- FR(df.y = GAV.t,COV[-j,], scale=F)$Sum.sq[1,2] # long
@@ -36,5 +36,5 @@ FR.CV <- function(Y,COV,GA){
   }
   rm(FRp,GAV.t,GAV.p)
   
-  return(list(acc=acc,pred.error=pred.error,SumsqP=SumsqP))
+  return(list(acc=acc,SumsqP=SumsqP))
 }
