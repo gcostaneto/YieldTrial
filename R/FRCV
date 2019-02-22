@@ -1,0 +1,40 @@
+##########################################################################################
+# Functions for cross-validation of FR models
+##########################################################################################
+new.GA <- function(cov, coef,GA){
+  predi <- as.matrix(cov)%*%t(coef)
+  #colnames(predi) <- colnames(GA)
+  #rownames(predi) <- rownames(GA)
+  return(predi)
+}
+
+##########################################################################################
+FR.CV <- function(Y,COV,GA){
+  kfold <- nrow(GA)
+  acc <- data.frame(acc=matrix(NA,nrow= kfold))
+  pred.error <- data.frame(rmse=matrix(NA,nrow= kfold))
+  SumsqP <- data.frame(long=matrix(NA,nrow= kfold),
+                       lat =matrix(NA,nrow= kfold),
+                       alt =matrix(NA,nrow= kfold))
+  
+  
+  for(j in 1:kfold){
+    
+    # prediciton
+    GAV.t <- t(GGAW(df = Y[-j,], digits = 4,plot = FALSE)$GA.matrix)
+    FRp <- FR(df.y = GAV.t,COV[-j,], scale=F)
+    (GAV.p <- matrix(new.GA(cov = COV[j,], coef = FRp$Coefficients[,c(1:3)])))
+    
+    # reliability and prediciton error
+    acc$acc[j] <- cor(GA[j,],GAV.p)
+    pred.error$rmse[j] <- rmse((GA[j,]-GAV.p))
+    
+    # participation
+    SumsqP$long[j]<- FR(df.y = GAV.t,COV[-j,], scale=F)$Sum.sq[1,2] # long
+    SumsqP$lat[j] <- FR(df.y = GAV.t,COV[-j,], scale=F)$Sum.sq[2,2] # lat
+    SumsqP$alt[j] <- FR(df.y = GAV.t,COV[-j,], scale=F)$Sum.sq[3,2] # alt
+  }
+  rm(FRp,GAV.t,GAV.p)
+  
+  return(list(acc=acc,pred.error=pred.error,SumsqP=SumsqP))
+}
