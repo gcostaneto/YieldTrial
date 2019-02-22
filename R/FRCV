@@ -7,7 +7,7 @@ new.GA <- function(cov, coef,GA){
   #rownames(predi) <- rownames(GA)
   return(predi)
 }
-
+rmse <- function(x,y){return(sqrt(((x-y)^2)/length(x)))}
 ##########################################################################################
 FR.CV <- function(Y,COV,GA){
   kfold <- nrow(GA)
@@ -27,7 +27,7 @@ FR.CV <- function(Y,COV,GA){
     
     # reliability and prediciton error
     acc$acc[j] <- cor(GA[j,],GAV.p)
-    pred.error$rmse[j] <- rmse((GA[j,]-GAV.p))
+    pred.error$rmse[j] <- rmse((x=GA[j,],y=GAV.p))
     
     # participation
     SumsqP$long[j]<- FR(df.y = GAV.t,COV[-j,], scale=F)$Sum.sq[1,2] # long
