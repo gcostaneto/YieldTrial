@@ -19,33 +19,37 @@
 #' @references Vargas M, Crossa J, Van Eeuwijk FA, Ramírez ME, Sayre K. Using partial least squares regression, factorial regression, and AMMI models for interpreting genotype x environment interaction. Crop Sci. 1999;39(4):955–67.
 #' @references Costa-Neto GMF. Integrating environmental covariates and thematic maps into genotype by environment interaction analysis in upland rice. Master degree Thesis in Genetics and Plant Breeding, Agronomy School, Federal University of Goiás. Brazil, 2017. 122f.
 
-FR.model = function(df.y){
+FR.model = function(df.y, intercept=TRUE){
   #' df.y is a data.frame containing the following colunms:
   #' environment (factor), genotype (factor), GxE or G+GxE effects (numeric) and covariates (numeric).
   #' attention: the number of covariates must to be lower than the number of observations (ordinary least squares limitations)
   require(plyr)
   require(reshape2)
 
-  
     Y = df.y[,c(1,2,3)]
     names(Y) = c("env","gid","value")
     Y$env = as.factor(Y$env)
     df.cov = df.y[,-c(1:3)]
-    form="value~0"
-    nenv = nlevels(Y$env)
+    
+    if(intercept == TRUE ){form="value~1"}
+    if(intercept == FALSE){form="value~0"}
   
   for(LP in 1:length(names(df.cov))){form=paste(form,"+",names(df.cov)[LP],sep="")}
   
     form = as.formula(form)
     Y = cbind(Y,df.cov)
     out.coef = predK = out.ss   = NULL
-    
-    modelK   = ddply(Y, .(gid), function(x) coef(lm(form,x)))
+    if(intercept == FALSE){modelK   = ddply(Y, .(gid), function(x) coef(lm(form,x)))}
+    if(intercept == TRUE) {modelK   = ddply(Y, .(gid), function(x) coef(lm(form,x)));names(modelK)[2]="Mean"}
     anovaK   = ddply(Y, .(gid), function(x) data.frame(source=rownames(anova(lm(form,x))),anova(lm(form,x))))
     predK    = ddply(Y, .(gid), function(x) predict(lm(form,x)));colnames(predK)[-1] = levels(Y$env); 
     predK    = melt(predK);names(predK)[2] = "env"
     out.coef = rbind(out.coef ,data.frame(modelK))
     out.ss   = rbind(out.ss   ,data.frame(anovaK))
-  
-  return(list(coefficients=out.coef,sum.of.squares=out.ss,yHat=predK))
+    
+    (ss.1 = dcast(out.ss,formula = gid~source,value.var = "Sum.Sq"))
+    (ss.1[,c(-1)] = ss.1[,c(-1)]/rowSums(ss.1[,-1]))
+    
+  return(list(coefficients=out.coef,sum.of.squares=out.ss,frac.ss=ss.1,yHat=predK))
+    #return(list(coefficients=out.coef,sum.of.squares=out.ss,yHat=predK))
 }
