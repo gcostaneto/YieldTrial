@@ -1,20 +1,17 @@
-#' Factorial Regression (FR) using additional information
+#' Factorial Regression (FR) models with environmental or genotypic covariates
 #'
-#' Returns a dataframe containing outputs results from two-by-two analysis using
-#' mixed model REML/BLUP (assuming random genotypic effects and fixed block).
-#' Perform a analysis on the variety connectivity (number of the same genotypes among trials),
-#' calculate the
-#' Indicates what type of genoytpe x environment interaction are predominant.
+#' Returns factorial regression from phenotypic and environmental data. 
+#' The number of phenotypic observations can not exceed the number of parameters 
+#' (coefficients of the genotypes for each covariate) to be estimated.
+#' Note: the model is based on ordinary minimal squares (OLS) and multicollinearity effects
+#' are not removed from the analysis. 
+#' Future updates of the function will allow FR modeling based on Bayesian inference (Gibbs-sampling) and partial least squares (PLS).
 #'
 #'
-#' @param df.y dataframe contaning response values (e.g., GE matrix)
-#' @param df.cov dataframe contaning predictor values (e.g., covariate matrix)
+#' @param df.y is a data.frame containing the following colunms: environment (factor), genotype (factor), GxE or G+GxE effects (numeric) and covariates (numeric).
 #' @param scale  FALSE (default) or TRUE if scale df.y is required
-#' @author  Germano Costa Neto
-#' @examples data(MET_maize)
-#' env.corr<-envcorrelation(y = "YIELD", trials = "ENV",
-#'                          gen = "GEN", rep = "REP", df = MET.maize)
-#' head(env.corr)
+#' @author  Germano M F Costa Neto
+
 #' @references Van Eeuwijk FA. Linear and bilinear models for the analysis of multi-environment trials: I. An inventory of models. Euphytica. 1995;84(1):1–7.
 #' @references Brancourt-Hulmel M, Denis JB, Lecomte C. Determining environmental covariates which explain genotype environment interaction in winter wheat through probe genotypes and biadditive factorial regression. Theor Appl Genet. 2000;100(2):285–98.
 #' @references Balfourier F, Oliveira JA, Charmet G, Arbones E. Factorial regression analysis of genotype by environment interaction in ryegrass populations, using both isozyme and climatic data as covariates. Euphytica. 1997;98(1):37–46.
@@ -22,38 +19,33 @@
 #' @references Vargas M, Crossa J, Van Eeuwijk FA, Ramírez ME, Sayre K. Using partial least squares regression, factorial regression, and AMMI models for interpreting genotype x environment interaction. Crop Sci. 1999;39(4):955–67.
 #' @references Costa-Neto GMF. Integrating environmental covariates and thematic maps into genotype by environment interaction analysis in upland rice. Master degree Thesis in Genetics and Plant Breeding, Agronomy School, Federal University of Goiás. Brazil, 2017. 122f.
 
-FR<-function (df.y, df.cov,scale=FALSE){
-  na<-colnames(df.cov)
-  n <- ncol(df.y)
+FR.model = function(df.y){
+  #' df.y is a data.frame containing the following colunms:
+  #' environment (factor), genotype (factor), GxE or G+GxE effects (numeric) and covariates (numeric).
+  #' attention: the number of covariates must to be lower than the number of observations (ordinary least squares limitations)
+  require(plyr)
+  require(reshape2)
 
-  # creating output objects
-  fres <- data.frame(matrix(NA,nrow=n,ncol=(1+ncol(df.cov))))
-  sqres<-vector("list",length(colnames(df.y)))
-  SQR<-data.frame(Sum.sq=rep(0,(1+ncol(df.cov))),VarExp=0)
-  row.names(SQR)<-c(na,"Residual")
-  names(fres)<-c(paste("b.",na,sep=""),"genotype")
-
-  if(isTRUE(scale == TRUE)){df.y<-scale(df.y)}
-  # creating formula
-  fo<-c()
-  for(i in 1:length(na)){fo[i]<-paste(na[i])}
-  fo<-c("0",fo);fmla<-as.formula(paste("y~",paste(fo, collapse= "+")))
-
-  for(i in 1:n){
-    dfa <- data.frame(y=df.y[,i],df.cov)
-    fit<-lm(fmla,data=dfa)
-    sqres[[i]]<-data.frame(anova(fit))
-    SQR[,1]<-SQR[,1]+data.frame(anova(fit))[,2]
-    for(j in 1:length(na)){fres[i,j]<-coef(fit)[j]}
-    fres[i,ncol(fres)]<-colnames(df.y)[i]}
-  names(sqres)<-colnames(df.y)
-  SQR[(nrow(SQR)+1),1]<-round(sum(SQR[1,1]:SQR[(nrow(SQR)-1),1]),digits=3)
-  SQR[(nrow(SQR)+1),1]<-sum(SQR[(nrow(SQR)-1),1],SQR[(nrow(SQR)-2),1])
-  row.names(SQR)[(nrow(SQR)-1):nrow(SQR)]<-c("Regression","Total")
-  SQR[,2][1:(nrow(SQR)-3)]<-round(100*((SQR[,1][1:(nrow(SQR)-3)])/(SQR[(nrow(SQR)),1])),digits=3)
-  SQR[which(row.names(SQR) == "Residual"),2]<-100-sum(SQR[(1:(nrow(SQR)-3)),2])
-  SQR[which(row.names(SQR) == "Regression"),2]<-100-SQR[which(row.names(SQR) == "Residual"),2]
-
-  return(list(Coefficients=fres,Sum.sq=SQR,Sum.sq.G=sqres))
-
+  
+    Y = df.y[,c(1,2,3)]
+    names(Y) = c("env","gid","value")
+    Y$env = as.factor(Y$env)
+    df.cov = df.y[,-c(1:3)]
+    form="value~0"
+    nenv = nlevels(Y$env)
+  
+  for(LP in 1:length(names(df.cov))){form=paste(form,"+",names(df.cov)[LP],sep="")}
+  
+    form = as.formula(form)
+    Y = cbind(Y,df.cov)
+    out.coef = predK = out.ss   = NULL
+    
+    modelK   = ddply(Y, .(gid), function(x) coef(lm(form,x)))
+    anovaK   = ddply(Y, .(gid), function(x) data.frame(source=rownames(anova(lm(form,x))),anova(lm(form,x))))
+    predK    = ddply(Y, .(gid), function(x) predict(lm(form,x)));colnames(predK)[-1] = levels(Y$env); 
+    predK    = melt(predK);names(predK)[2] = "env"
+    out.coef = rbind(out.coef ,data.frame(modelK))
+    out.ss   = rbind(out.ss   ,data.frame(anovaK))
+  
+  return(list(coefficients=out.coef,sum.of.squares=out.ss,yHat=predK))
 }
