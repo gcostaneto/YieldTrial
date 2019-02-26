@@ -47,7 +47,7 @@ FR.model = function(df.y, intercept=TRUE){
     out.coef = rbind(out.coef ,data.frame(modelK))
     out.ss   = rbind(out.ss   ,data.frame(anovaK))
     
-    (ss.1 = dcast(out.ss,formula = gid~source,value.var = "Sum.Sq"))
+    (ss.1 = dcast(out.ss,formula = gid~source,value.var = "Mean.Sq"))
     (ss.1[,c(-1)] = ss.1[,c(-1)]/rowSums(ss.1[,-1]))
     
   return(list(coefficients=out.coef,sum.of.squares=out.ss,frac.ss=ss.1,yHat=predK))
