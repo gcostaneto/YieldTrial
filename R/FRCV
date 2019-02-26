@@ -5,7 +5,9 @@ new.GA <- function(cov, coef){
   predi <- as.matrix(cov)%*%t(coef)
   return(predi)
 }
-rmse <- function(x,y){return(sqrt(((x-y)^2)/length(x)))}
+rmse = function(m){ # m = desvios entre valores observados e preditos
+  sqrt(mean((m)^2))
+}
 ##########################################################################################
 
 FR.model = function(df.y, CV = TRUE){
