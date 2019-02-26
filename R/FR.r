@@ -3,7 +3,7 @@
 #' Returns factorial regression from phenotypic and environmental data. 
 #' The number of phenotypic observations can not exceed the number of parameters 
 #' (coefficients of the genotypes for each covariate) to be estimated.
-#' Note: the model is based on ordinary minimal squares (OLS) and multicollinearity effects
+#' Note: the model is based on ordinary least squares (OLS) and multicollinearity effects
 #' are not removed from the analysis. 
 #' Future updates of the function will allow FR modeling based on Bayesian inference (Gibbs-sampling) and partial least squares (PLS).
 #'
